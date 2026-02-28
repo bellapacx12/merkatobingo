@@ -1,6 +1,6 @@
 const TasksPage = () => {
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+    <div className="flex items-center justify-center h-screen text-white">
       <div className="text-center">
         {/* Lightning Emoji / Animation */}
         <div className="text-6xl animate-pulse mb-4">⚡</div>
