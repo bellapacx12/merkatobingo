@@ -5,8 +5,6 @@ import { Noto_Sans_Ethiopic } from "next/font/google";
 import TopBar from "@/components/layout/TopBar";
 import BottomNav from "@/components/layout/BottomNav";
 import { BottomNavProvider } from "@/context/BottomNavContext";
-import useTelegramAuth from "@/hooks/useTelegramAuth";
-import { useEffect } from "react";
 
 const noto = Noto_Sans_Ethiopic({
   subsets: ["ethiopic"],
@@ -18,14 +16,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, token, loading } = useTelegramAuth();
-
-  useEffect(() => {
-    if (!loading && user) {
-      console.log("Logged in Telegram user:", user);
-    }
-  }, [loading, user]);
-
   return (
     <html lang="am">
       <body className={noto.className}>

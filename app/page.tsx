@@ -1,39 +1,44 @@
 "use client";
+import { useState, useEffect } from "react";
 
-import { useState } from "react";
-import CountdownTimer from "@/components/CountdownTimer";
-import ReferralCard from "@/components/ReferralCard";
-import GameModeCard from "@/components/GameModeCard";
+export default function useTelegramAuth() {
+  const [user, setUser] = useState<any>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isFirstTime, setIsFirstTime] = useState(false); // <-- add this
+  const [loading, setLoading] = useState(true);
 
-const gameModes = [
-  { id: "bingo", titleAmh: "ቢንጎ", titleEng: "Classic Bingo" },
-  { id: "minibingo", titleAmh: "ሚኒ ቢንጎ", titleEng: "Mini Bingo" },
-];
+  useEffect(() => {
+    const initData = (window as any).Telegram?.WebApp?.initData;
+    if (!initData) return setLoading(false);
 
-export default function HomePage() {
-  const [activeGameMode, setActiveGameMode] = useState("bingo");
+    const login = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/telegram`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData }),
+          },
+        );
 
-  return (
-    <main className="px-4 pt-6 pb-24 space-y-6 max-w-[480px] mx-auto">
-      {/* Countdown Timer (optional, can enable later) */}
-      {/* <CountdownTimer /> */}
+        const data = await res.json();
 
-      {/* Referral Card */}
-      <ReferralCard />
+        if (data.accessToken) {
+          localStorage.setItem("token", data.accessToken);
+          setToken(data.accessToken);
+          setUser(data.user);
+          setIsFirstTime(data.isFirstTime ?? false); // <-- set it
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      {/* Game Mode Horizontal Scroll */}
-      <div className="flex space-x-4 overflow-x-auto pb-2">
-        {gameModes.map((mode) => (
-          <GameModeCard
-            key={mode.id}
-            id={mode.id} // Important for navigation later
-            titleAmh={mode.titleAmh}
-            titleEng={mode.titleEng}
-            isActive={activeGameMode === mode.id}
-            onSelect={() => setActiveGameMode(mode.id)}
-          />
-        ))}
-      </div>
-    </main>
-  );
+    login();
+  }, []);
+
+  return { user, token, isFirstTime, loading };
 }
