@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import useTelegramAuth from "@/hooks/useTelegramAuth";
 import TelegramContactPrompt from "@/components/TelegramContactPrompt";
 import ReferralCard from "@/components/ReferralCard";
@@ -16,67 +16,63 @@ export default function HomePage() {
   const { user, token, isFirstTime, loading } = useTelegramAuth();
   const [activeGameMode, setActiveGameMode] = useState("bingo");
   const [phoneUpdated, setPhoneUpdated] = useState(false);
-  const [status, setStatus] = useState<string>("Checking backend...");
-  const [error, setError] = useState<string | null>(null);
+  const [pendingPhone, setPendingPhone] = useState<string | null>(null);
 
+  // Only trigger handleContact when token is set
   useEffect(() => {
-    const checkBackend = async () => {
-      try {
-        const res = await fetch("https://merkatoback.onrender.com/health");
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        const data = await res.json();
-        setStatus(`Backend is up! Response: ${JSON.stringify(data)}`);
-      } catch (err: any) {
-        console.error("Backend call failed:", err);
-        setError(err.message || "Unknown error");
-      }
-    };
-
-    checkBackend();
-  }, []);
-  // Update user's phone after Telegram contact
-  const handleContact = async (phone: string) => {
-    if (!token) return;
-    try {
-      const res = await fetch(
-        `https://merkatoback.onrender.com/users/update-contact`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ phone }),
-        },
-      );
-      if (res.ok) {
-        setPhoneUpdated(true);
-        console.log("[HomePage] Phone updated successfully");
-      } else {
-        console.error("[HomePage] Failed to update phone:", await res.text());
-      }
-    } catch (err) {
-      console.error("[HomePage] Error updating phone:", err);
+    if (token && pendingPhone) {
+      const updatePhone = async () => {
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/users/update-contact`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ phone: pendingPhone }),
+            },
+          );
+          if (res.ok) {
+            setPhoneUpdated(true);
+            setPendingPhone(null);
+            console.log("[HomePage] Phone updated successfully");
+          } else {
+            console.error(
+              "[HomePage] Failed to update phone:",
+              await res.text(),
+            );
+          }
+        } catch (err) {
+          console.error("[HomePage] Error updating phone:", err);
+        }
+      };
+      updatePhone();
     }
+  }, [token, pendingPhone]);
+
+  // This just queues the phone number until token exists
+  const handleContact = (phone: string) => {
+    if (!token) {
+      console.log("[HomePage] Token not ready, queuing phone update:", phone);
+      setPendingPhone(phone);
+      return;
+    }
+    setPendingPhone(phone);
   };
 
-  // Show loading while auth is in progress
   if (loading) {
     return <div className="text-white p-4">Logging in via Telegram...</div>;
   }
 
-  // Show Telegram contact prompt for first-time users
   if (isFirstTime && !phoneUpdated) {
     return <TelegramContactPrompt onContactReceived={handleContact} />;
   }
 
-  // Main page content
   return (
     <main className="px-4 pt-6 pb-24 space-y-6 max-w-[480px] mx-auto">
-      {/* Referral Card */}
       <ReferralCard />
-
-      {/* Game Mode Selector */}
       <div className="flex space-x-4 overflow-x-auto pb-2">
         {gameModes.map((mode) => (
           <GameModeCard
@@ -89,8 +85,6 @@ export default function HomePage() {
           />
         ))}
       </div>
-
-      {/* Optional: show user info for debugging */}
       {user && (
         <div className="text-sm text-gray-300 mt-4">
           Logged in as {user.first_name} {user.last_name} ({user.username})
