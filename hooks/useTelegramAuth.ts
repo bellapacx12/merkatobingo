@@ -28,12 +28,9 @@ export default function useTelegramAuth(): AuthData {
         // 1️⃣ Check token
         let storedToken = localStorage.getItem("token");
         if (storedToken) {
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-            {
-              headers: { Authorization: `Bearer ${storedToken}` },
-            },
-          );
+          const res = await fetch(`https://merkatoback.onrender.com/auth/me`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
           if (res.ok) {
             const data = await res.json();
             setUser(data.user);
