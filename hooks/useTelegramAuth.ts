@@ -40,7 +40,7 @@ export default function useTelegramAuth(debug = false): AuthData {
             setLoading(false);
             return;
           }
-          localStorage.removeItem("token");
+          localStorage.removeItem("tokesn");
         }
 
         // 2️⃣ Telegram WebApp or debug override
