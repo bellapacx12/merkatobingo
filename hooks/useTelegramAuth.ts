@@ -86,7 +86,7 @@ export default function useTelegramAuth(): AuthData {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ initData, user: tgUser }),
+            body: JSON.stringify({ initData }),
           },
         );
 
