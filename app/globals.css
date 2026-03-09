@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+body {
+  @apply bg-gradient-to-b from-[#1a1a3b] to-[#2d1b69] text-white;
+  font-family: "Noto Sans Ethiopic", sans-serif;
+}
