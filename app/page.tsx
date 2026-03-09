@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import useTelegramAuth from "@/hooks/useTelegramAuth";
 import TelegramContactPrompt from "@/components/TelegramContactPrompt";
 import ReferralCard from "@/components/ReferralCard";
@@ -16,7 +16,24 @@ export default function HomePage() {
   const { user, token, isFirstTime, loading } = useTelegramAuth();
   const [activeGameMode, setActiveGameMode] = useState("bingo");
   const [phoneUpdated, setPhoneUpdated] = useState(false);
+  const [status, setStatus] = useState<string>("Checking backend...");
+  const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        const res = await fetch("https://merkatoback.onrender.com/health");
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        setStatus(`Backend is up! Response: ${JSON.stringify(data)}`);
+      } catch (err: any) {
+        console.error("Backend call failed:", err);
+        setError(err.message || "Unknown error");
+      }
+    };
+
+    checkBackend();
+  }, []);
   // Update user's phone after Telegram contact
   const handleContact = async (phone: string) => {
     if (!token) return;
