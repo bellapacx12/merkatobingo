@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { retrieveLaunchParams } from "@telegram-apps/sdk";
 
 interface User {
   id: string;
@@ -17,7 +18,7 @@ interface AuthData {
   loading: boolean;
 }
 
-export default function useTelegramAuth(): AuthData {
+export default function useTelegramAuthSDK(): AuthData {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isFirstTime, setIsFirstTime] = useState(false);
@@ -26,89 +27,52 @@ export default function useTelegramAuth(): AuthData {
   useEffect(() => {
     const init = async () => {
       try {
-        console.log("[Auth] Initializing...");
-
-        const user = (window as any).Telegram?.WebApp.initDataUnsafe.user;
-        console.log(user);
-
-        // 1️⃣ Check localStorage token
-        let storedToken = localStorage.getItem("token");
-        console.log("[Auth] Stored token:", storedToken);
-
+        // 1️⃣ Check localStorage
+        const storedToken = localStorage.getItem("token");
         if (storedToken) {
           const res = await fetch(`https://merkatoback.onrender.com/auth/me`, {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
           if (res.ok) {
             const data = await res.json();
-            console.log("[Auth] Token valid, user data:", data);
             setUser(data.user);
             setToken(storedToken);
             setIsFirstTime(data.isFirstTime ?? false);
             setLoading(false);
             return;
-          } else {
-            console.warn("[Auth] Stored token invalid, removing...");
-            localStorage.removeItem("token");
-            storedToken = null;
           }
+          localStorage.removeItem("token");
         }
 
-        // 2️⃣ Check for Telegram WebApp
-        const tg = (window as any).Telegram?.WebApp;
-        console.log(tg);
-        if (!tg) {
-          console.warn(
-            "[Auth] Not in Telegram WebApp, skipping Telegram login",
-          );
+        // 2️⃣ Retrieve Telegram initData using SDK
+        const { initDataRaw } = retrieveLaunchParams();
+
+        if (!initDataRaw) {
           setLoading(false);
           return;
         }
 
-        // 3️⃣ Wait until Telegram initData is ready (max 3s)
-        let tries = 0;
-        while (!tg.initData && tries < 30) {
-          await new Promise((res) => setTimeout(res, 100));
-          tries++;
-        }
-
-        if (!tg.initData || !tg.initDataUnsafe?.user) {
-          console.warn("[Auth] Telegram initData/user not available");
-          setLoading(false);
-          return;
-        }
-
-        const initData = tg.initData;
-        const tgUser = tg.initDataUnsafe.user;
-
-        console.log("[Auth] Telegram user found:", tgUser);
-
-        // 4️⃣ Call backend to login via Telegram
+        // 3️⃣ Send signed initData to backend
         const res = await fetch(
           `https://merkatoback.onrender.com/auth/telegram`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ initData }),
+            body: JSON.stringify({ initData: initDataRaw }),
           },
         );
 
         const data = await res.json();
-        console.log("[Auth] Backend response:", data);
-
         if (res.ok && data.token) {
           localStorage.setItem("token", data.token);
           setToken(data.token);
           setUser(data.user);
           setIsFirstTime(data.isFirstTime ?? false);
-        } else {
-          console.warn("[Auth] Telegram login failed:", data);
         }
       } catch (err) {
-        console.error("[Auth] Initialization error:", err);
+        console.error("Auth error:", err);
       } finally {
         setLoading(false);
-        console.log("[Auth] Done loading");
       }
     };
 
