@@ -53,6 +53,7 @@ export default function useTelegramAuth(): AuthData {
 
         // 2️⃣ Check for Telegram WebApp
         const tg = (window as any).Telegram?.WebApp;
+        console.log(tg);
         if (!tg) {
           console.warn(
             "[Auth] Not in Telegram WebApp, skipping Telegram login",
