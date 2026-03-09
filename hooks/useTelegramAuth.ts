@@ -28,6 +28,9 @@ export default function useTelegramAuth(): AuthData {
       try {
         console.log("[Auth] Initializing...");
 
+        const user = (window as any).Telegram?.WebApp.initDataUnsafe.user;
+        console.log(user);
+
         // 1️⃣ Check localStorage token
         let storedToken = localStorage.getItem("token");
         console.log("[Auth] Stored token:", storedToken);
